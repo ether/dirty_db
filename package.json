@@ -13,7 +13,6 @@
     "bun-types": "^1.0.6",
     "eslint": "^7.32.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
-    "eslint-plugin-mocha": "^9.0.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prefer-arrow": "^1.2.3",
     "eslint-plugin-promise": "^5.1.0",
@@ -28,9 +27,7 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "test": "mocha test/test-*.js -R list",
-    "build": "bun run build:declaration",
-    "build:declaration": "tsc"
+    "build": "tsc"
   },
   "files": [
     "./dist"
