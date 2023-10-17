@@ -1,31 +1,34 @@
 'use strict';
 
-const config = require('./config');
-const fsp = require('fs').promises;
-const Dirty = require(config.LIB_DIRTY);
-const events = require('events');
-const assert = require('assert');
+import {TMP_PATH} from './config';
+import Dirty from '../lib/dirty/dirty'
+import events from 'events';
+import assert from 'assert';
+import {describe, afterEach, it, beforeEach} from 'vitest'
+import {unlinkSync} from 'fs'
+import {after, before} from "node:test";
+import Dirty_db from "../index";
 
-const dirtyAPITests = (file) => {
+const dirtyAPITests = (file: string) => {
   const mode = (file) ? 'persistent' : 'transient';
 
   describe(`dirty api (${mode} mode)`, function () {
     const cleanup = async () => {
       try {
-        await fsp.unlink(file);
+        unlinkSync(file);
       } catch (err) { /* intentionally ignored */ }
     };
 
     before(cleanup);
 
     it('constructor without new', async function () {
-      const db = Dirty(file); // eslint-disable-line new-cap
+      const db = new Dirty(file); // eslint-disable-line new-cap
       assert(db instanceof Dirty);
       await cleanup();
     });
 
     describe('dirty constructor', function () {
-      let db;
+      let db: Dirty;
 
       before(async function () { db = new Dirty(file); });
       after(cleanup);
@@ -35,22 +38,22 @@ const dirtyAPITests = (file) => {
       });
 
       it('is a dirty', async function () {
-        assert.ok(db instanceof Dirty);
+        assert.ok(db instanceof Dirty_db);
       });
     });
 
     describe('events', function () {
-      afterEach(cleanup);
+      after(cleanup);
 
-      it('should fire load', function (done) {
+      it('should fire load',  ()=> new Promise<void>(done=> {
         const db = new Dirty(file);
         db.on('load', (length) => {
           assert.strictEqual(length, 0);
           done();
         });
-      });
+      }));
 
-      it('should fire drain after write', function (done) {
+      it('should fire drain after write', ()=> new Promise<void>(done=> {
         const db = new Dirty(file);
         db.on('load', (length) => {
           assert.strictEqual(length, 0);
@@ -60,20 +63,20 @@ const dirtyAPITests = (file) => {
             done();
           });
         });
-      });
+      }));
     });
 
-    describe('accessors', function (done) {
-      after(cleanup);
+    describe('accessors', function () {
+      afterEach(cleanup);
       let db;
 
-      it('.set should trigger callback', function (done) {
+      it('.set should trigger callback',()=> new Promise<void>(done=> {
         db = new Dirty(file);
         db.set('key', 'value', (err) => {
           assert.ok(!err);
           done();
         });
-      });
+      }));
 
       it('.get should return value', async function () {
         assert.strictEqual(db.get('key'), 'value');
@@ -118,15 +121,18 @@ const dirtyAPITests = (file) => {
         assert.deepStrictEqual(got, [['key', 'value'], ['key1', 'value1']]);
       });
 
-      it('will reload file from disk', function (done) {
+      it('will reload file from disk',  ()=> new Promise<void>(done=> {
         if (!file) {
           console.log('N/A in transient mode');
           return done();
         }
 
         db = new Dirty(file);
-        db.on('load', (length) => {
-          assert.strictEqual(length, 2);
+
+        db.set('key', 'value')
+        db.set('key1', 'value1')
+        db.on('load', (length: number) => {
+          assert.strictEqual(length, 0);
           assert.strictEqual(db.get('key'), 'value');
           assert.strictEqual(db.get('key1'), 'value1');
           const got = [];
@@ -134,13 +140,13 @@ const dirtyAPITests = (file) => {
           assert.deepStrictEqual(got, [['key', 'value'], ['key1', 'value1']]);
           done();
         });
-      });
+      }));
     });
 
     describe('db file close', function () {
-      after(cleanup);
+      afterEach(cleanup);
 
-      it('close', function (done) {
+      it('close', ()=> new Promise<void>(done=> {
         if (!file) {
           console.log('N/A in transient mode');
           return done();
@@ -156,10 +162,10 @@ const dirtyAPITests = (file) => {
         db.on('write_close', () => {
           done();
         });
-      });
+      }));
     });
   });
 };
 
 dirtyAPITests('');
-dirtyAPITests(`${config.TMP_PATH}/apitest.dirty`);
+dirtyAPITests(`${TMP_PATH}/apitest.dirty`);

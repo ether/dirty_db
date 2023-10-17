@@ -2,6 +2,7 @@
 
 import {createReadStream, createWriteStream, ReadStream, WriteStream} from 'fs'
 import {EventEmitter} from 'events'
+import * as fs from "fs";
 
 
 type Error = {
@@ -15,14 +16,14 @@ type Row = {
 
 class Dirty extends EventEmitter {
   private readonly path: PathLike;
-  private readonly _data: Map<any, any>;
+  readonly _data: Map<any, any>;
   private readonly _queue: Map<any, any>;
   private _readStream: ReadStream;
   private _writeStream: WriteStream;
   private _waitForDrain: boolean;
   private _inFlightWrites: number;
 
-  constructor(path: PathLike) {
+  constructor(path?: PathLike) {
     super();
 
     this.path = path;
@@ -42,7 +43,7 @@ class Dirty extends EventEmitter {
    * cb is fired when the data is persisted.
    * In memory, this is immediate - on disk, it will take some time.
    */
-  set(key: string, val: string, cb:Function) {
+  set(key: string|number, val: string|Object, cb?:Function) {
     if (val === undefined) {
       this._data.delete(key);
     } else {
@@ -62,7 +63,7 @@ class Dirty extends EventEmitter {
    * Get the value stored at a key in the database
    * This is synchronous since a cache is maintained in-memory
    */
-  get(key: string) {
+  get(key: string|number) {
     return this._data.get(key);
   }
 
@@ -76,7 +77,7 @@ class Dirty extends EventEmitter {
   /**
    * Remove a key and the value stored there
    */
-  rm(key: string, cb:Function) {
+  rm(key: string|number, cb?: Function) {
     this.set(key, undefined, cb);
   }
 
@@ -94,7 +95,7 @@ class Dirty extends EventEmitter {
    * This is synchronous since a cache is maintained in-memory
    * cb is passed as per Dirty.prototype.set
    */
-  update(key: string, updater:Function, cb:Function) {
+  update(key: string, updater:Function, cb?:Function) {
     this.set(key, updater(this.get(key)), cb);
   }
 

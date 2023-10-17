@@ -1,13 +1,14 @@
 'use strict';
 
-const config = require('./config');
-const Dirty = require(config.LIB_DIRTY);
-const assert = require('assert');
+import {TMP_PATH} from './config';
+import assert from 'assert';
+import {describe, it, beforeEach} from 'vitest'
+import Dirty from "../lib/dirty";
 
 describe.skip('test-types', function () {
   let db;
 
-  before(async function () { db = new Dirty(`${config.TMP_PATH}/test-types.dirty`); });
+  beforeEach(async function () { db = new Dirty(`${TMP_PATH}/test-types.dirty`); });
 
   describe('keys', function () {
     it('should prevent storage of an undefined key', async function () {

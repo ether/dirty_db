@@ -1,27 +1,28 @@
 'use strict';
 
-const config = require('./config');
-const fs = require('fs');
+import {TMP_PATH} from './config';
+import fs from 'fs';
 const fsp = fs.promises;
-const assert = require('assert');
-const Dirty = require(config.LIB_DIRTY);
+import assert from 'assert';
+import Dirty from '../lib/dirty'
+import {describe, afterEach, it} from 'vitest'
 
 describe('test-flush', function () {
-  const file = `${config.TMP_PATH}/flush.dirty`;
+  const file = `${TMP_PATH}/flush.dirty`;
 
   afterEach(async function () {
     await fsp.unlink(file);
   });
 
-  it('should fire drain event on write', function (done) {
+  it('should fire drain event on write', ()=> new Promise<void>(done=> {
     const db = new Dirty(file);
     db.set('foo', 'bar');
     db.on('drain', () => {
       done();
     });
-  });
+  }));
 
-  it('should write to disk appropriately', function (done) {
+  it('should write to disk appropriately', ()=> new Promise<void>(done=> {
     const db = new Dirty(file);
     db.set('foo1', 'bar1');
     db.on('drain', () => {
@@ -34,7 +35,7 @@ describe('test-flush', function () {
 
       done();
     });
-  });
+  }));
 });
 
 describe('test-for-each', function () {
@@ -56,14 +57,14 @@ describe('test-for-each', function () {
 });
 
 describe('test-load', function () {
-  const file = `${config.TMP_PATH}/load.dirty`;
+  const file = `${TMP_PATH}/load.dirty`;
   const db = new Dirty(file);
 
   afterEach(async function () {
     await fsp.unlink(file);
   });
 
-  it('should load after write to disk', function (done) {
+  it('should load after write to disk', ()=> new Promise<void>(done=> {
     db.set(1, 'A');
     db.set(2, 'B');
     db.set(3, 'C');
@@ -83,7 +84,7 @@ describe('test-load', function () {
         done();
       });
     });
-  });
+  }))
 });
 
 
@@ -100,7 +101,7 @@ describe('test-size', function () {
 });
 
 describe('test-chaining-of-constructor', function () {
-  const file = `${config.TMP_PATH}/chain.dirty`;
+  const file = `${TMP_PATH}/chain.dirty`;
   fs.existsSync(file) && fs.unlinkSync(file);
 
   it('should allow .on load to chain to constructor', async function () {
