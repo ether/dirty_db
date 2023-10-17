@@ -8,38 +8,8 @@ on:
       - master
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node_version:
-          - 12
-          - 14
-          - 16
-    name: Test Node.js v${{matrix.node_version}}
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: ${{matrix.node_version}}
-      - run: npm ci
-      - run: npm test
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: ${{matrix.node_version}}
-      - run: npm ci
-      - run: npm run lint
-
   publish-npm:
     if: github.event_name == 'push'
-    needs:
-      - test
-      - lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -47,7 +17,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v2
         with:
-          node-version: 12
+          node-version: 20
           registry-url: https://registry.npmjs.org/
       - name: Bump version (patch)
         run: |

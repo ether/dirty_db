@@ -1,3 +1,4 @@
 *.dirty
 node_modules
 .idea
+dist

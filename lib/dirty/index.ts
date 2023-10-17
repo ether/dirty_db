@@ -1,3 +1,3 @@
-'use strict';
+import Dirty from './dirty'
 
-module.exports = require('./dirty');
+export default Dirty

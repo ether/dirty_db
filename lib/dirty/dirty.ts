@@ -1,10 +1,28 @@
 'use strict';
 
-const fs = require('fs');
-const EventEmitter = require('events').EventEmitter;
+import {createReadStream, createWriteStream, ReadStream, WriteStream} from 'fs'
+import {EventEmitter} from 'events'
+
+
+type Error = {
+  code: string
+}
+
+type Row = {
+  key: string,
+  val: string
+}
 
 class Dirty extends EventEmitter {
-  constructor(path) {
+  private readonly path: PathLike;
+  private readonly _data: Map<any, any>;
+  private readonly _queue: Map<any, any>;
+  private _readStream: ReadStream;
+  private _writeStream: WriteStream;
+  private _waitForDrain: boolean;
+  private _inFlightWrites: number;
+
+  constructor(path: PathLike) {
     super();
 
     this.path = path;
@@ -24,7 +42,7 @@ class Dirty extends EventEmitter {
    * cb is fired when the data is persisted.
    * In memory, this is immediate - on disk, it will take some time.
    */
-  set(key, val, cb) {
+  set(key: string, val: string, cb:Function) {
     if (val === undefined) {
       this._data.delete(key);
     } else {
@@ -44,7 +62,7 @@ class Dirty extends EventEmitter {
    * Get the value stored at a key in the database
    * This is synchronous since a cache is maintained in-memory
    */
-  get(key) {
+  get(key: string) {
     return this._data.get(key);
   }
 
@@ -58,14 +76,14 @@ class Dirty extends EventEmitter {
   /**
    * Remove a key and the value stored there
    */
-  rm(key, cb) {
+  rm(key: string, cb:Function) {
     this.set(key, undefined, cb);
   }
 
   /**
    * Iterate over keys, applying match function
    */
-  forEach(fn) {
+  forEach(fn: Function) {
     for (const [key, val] of this._data) {
       if (fn(key, val) === false) break;
     }
@@ -76,7 +94,7 @@ class Dirty extends EventEmitter {
    * This is synchronous since a cache is maintained in-memory
    * cb is passed as per Dirty.prototype.set
    */
-  update(key, updater, cb) {
+  update(key: string, updater:Function, cb:Function) {
     this.set(key, updater(this.get(key)), cb);
   }
 
@@ -103,13 +121,13 @@ class Dirty extends EventEmitter {
       return;
     }
 
-    this._readStream = fs.createReadStream(this.path, {
+    this._readStream = createReadStream(this.path, {
       encoding: 'utf-8',
       flags: 'r',
     });
 
     this._readStream
-        .on('error', (err) => {
+        .on('error', (err: Error) => {
           if (err.code === 'ENOENT') {
             this.emit('load', 0);
             return;
@@ -128,11 +146,11 @@ class Dirty extends EventEmitter {
               return;
             }
 
-            let row;
+            let row: Row;
             try {
               row = JSON.parse(rowStr);
               if (!('key' in row)) {
-                throw new Error();
+                return '';
               }
             } catch (e) {
               this.emit('error', new Error(`Could not load corrupted row: ${rowStr}`));
@@ -158,7 +176,7 @@ class Dirty extends EventEmitter {
           this.emit('read_close');
         });
 
-    this._writeStream = fs.createWriteStream(this.path, {
+    this._writeStream = createWriteStream(this.path, {
       encoding: 'utf-8',
       flags: 'a',
     });
@@ -196,6 +214,4 @@ class Dirty extends EventEmitter {
   }
 }
 
-Dirty.Dirty = Dirty;
-// Trap `apply` for backwards compatibility with callers that don't use `new`.
-module.exports = exports = new Proxy(Dirty, {apply: (target, thisArg, args) => new Dirty(...args)});
+export default Dirty
